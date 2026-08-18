@@ -104,8 +104,13 @@ export function GroupTable({
                   </span>
                 </SpeechBubble>
               ) : line ? (
+                /*
+                 * key 를 대사 내용으로 잡으면 음성 인식 중 글자가 늘 때마다
+                 * 말풍선이 새로 생기고 옛것이 빠져나가면서 여러 개가 겹쳐 쌓인다.
+                 * 자리마다 하나씩만 두고 내용만 바꿔 끼운다.
+                 */
                 <TalkBubble
-                  key={line.text}
+                  key="line"
                   anchor={seat.bubble}
                   said={line}
                   lang={lang}

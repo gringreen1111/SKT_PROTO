@@ -16,6 +16,11 @@ export interface SttHandlers {
   onError?: (kind: SttErrorKind) => void;
   onEnd?: () => void;
   onLevel?: (level: number) => void;
+  /**
+   * 아이가 따라 말해야 하는 문장. 목업 STT(?demo=1)가 이 문장을 대신 읽어 준다.
+   * 진짜 음성 인식에는 아무 영향이 없다 — 힌트로도 쓰지 않는다.
+   */
+  expect?: string | null;
 }
 
 export interface SttSession {
@@ -115,8 +120,14 @@ function fakeMeter(onLevel: (v: number) => void): () => void {
 
 /** ?mock=stt — 마이크 없이 전체 플로우를 시연한다. */
 function mockSession(h: SttHandlers): SttSession {
-  const line = mockLines[Math.min(mockCursor, mockLines.length - 1)];
-  mockCursor += 1;
+  // 따라 말하기 단계면 그 문장을 읽은 것으로 시늉한다.
+  let line: string;
+  if (h.expect) {
+    line = h.expect;
+  } else {
+    line = mockLines[Math.min(mockCursor, mockLines.length - 1)];
+    mockCursor += 1;
+  }
   const short = line.replace(/\s/g, "").length <= 5;
   const stopMeter = fakeMeter((v) => h.onLevel?.(v));
 

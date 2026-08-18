@@ -11,6 +11,8 @@ export interface VoiceProfile {
   rate: number;
   volume?: number;
   lang?: string;
+  /** 소리가 실제로 나기 시작한 순간. 입 모양 애니메이션을 붙일 자리. */
+  onStart?: () => void;
 }
 
 /** 문장 코치는 아이가 따라 읽어야 하므로 가장 느리다. */
@@ -68,12 +70,19 @@ class WebSpeechVoiceEngine implements VoiceEngine {
       if (!supported || !text.trim()) return resolve();
 
       let done = false;
+      let timer: number | undefined;
       const finish = () => {
         if (done) return;
         done = true;
+        if (timer !== undefined) window.clearTimeout(timer);
         current = null;
         resolve();
       };
+
+      /** 글자 수로 잡은 읽는 데 걸릴 시간. */
+      const spokenMs = Math.min(20000, 2500 + text.length * 260);
+      /** 소리가 안 나는 기기에서 글자를 읽을 최소 시간. */
+      const silentMs = Math.min(4000, 900 + text.length * 45);
 
       try {
         if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
@@ -90,12 +99,23 @@ class WebSpeechVoiceEngine implements VoiceEngine {
 
         u.onend = finish;
         u.onerror = finish;
+        /**
+         * 소리가 실제로 나기 시작하면 그때부터 넉넉히 기다린다.
+         * 안 나면(헤드리스, 음성 엔진이 죽은 기기) 짧게 끊는다 —
+         * 대사가 끝나야 마이크가 열리는 구조라, 여기서 오래 잡으면
+         * 아이는 잠긴 마이크를 십몇 초씩 쳐다보게 된다.
+         */
+        u.onstart = () => {
+          profile.onStart?.();
+          if (done) return;
+          window.clearTimeout(timer);
+          timer = window.setTimeout(finish, spokenMs);
+        };
+
         current = u;
         window.speechSynthesis.speak(u);
         window.speechSynthesis.resume();
-
-        // 일부 모바일 브라우저는 onend 를 안 준다. 길이 기반 안전망.
-        setTimeout(finish, Math.min(20000, 2500 + text.length * 260));
+        timer = window.setTimeout(finish, silentMs);
       } catch {
         finish();
       }

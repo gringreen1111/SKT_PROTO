@@ -224,4 +224,33 @@ export function similarity(a: string, b: string): number {
   return Math.max(0, 1 - d[s.length][t.length] / Math.max(s.length, t.length));
 }
 
+/** 조사·어미만 남은 짧은 조각. 내용어를 셀 때 뺀다. */
+const FUNCTION_WORDS = new Set(["나는", "나", "내가", "이", "그", "저", "책을", "책", "이건", "그건"]);
+
+/**
+ * 아이가 추천 문장을 따라 읽었는지 본다.
+ *
+ * 발음이 정확할 필요는 없다(§5.3). 7~9세가 초급 한국어를 읽는 상황이고,
+ * STT는 어차피 흘려 듣는다. 그래서 두 갈래로 느슨하게 본다.
+ *   1) 전체 문자열이 얼추 비슷하거나
+ *   2) 목표 문장의 내용어를 절반 이상 담고 있으면 통과
+ */
+export function matchesTarget(said: string, target: string): boolean {
+  const a = stripPunct(said);
+  const b = stripPunct(target);
+  if (!a || !b) return false;
+
+  if (similarity(said, target) >= 0.5) return true;
+
+  const content = target
+    .split(/\s+/)
+    .map((w) => stripPunct(w))
+    .filter((w) => w.length >= 2 && !FUNCTION_WORDS.has(w));
+  if (!content.length) return a.includes(b) || b.includes(a);
+
+  // 어미가 잘려도 잡히게 앞 2글자까지만 본다("읽었어요" → "읽었").
+  const hit = content.filter((w) => a.includes(w) || a.includes(w.slice(0, 2))).length;
+  return hit / content.length >= 0.5;
+}
+
 export type LangKey = LangCode;
