@@ -1,4 +1,4 @@
-import type { DialogueEngine, SpeakerId, TurnInput, TurnResponse, Verdict } from "@/lib/types";
+import type { DialogueEngine, LangCode, SpeakerId, TurnInput, TurnResponse, Verdict } from "@/lib/types";
 import { FALLBACK_LINES, matchLexicon, suggestionsFor, withParticle, type LexEntry } from "./lexicon";
 
 /**
@@ -56,31 +56,136 @@ export function check(raw: string | null | undefined): CheckResult {
 }
 
 /** 아이가 쓴 단어를 되받아 쓰는 NPC 반응. §5.2 "듣고 있다"는 신호. */
-function npcReaction(speaker: SpeakerId, childText: string, state: CheckState): string {
-  const quoted = childText.length > 18 ? `${childText.slice(0, 18)}…` : childText;
+function npcReaction(
+  speaker: SpeakerId,
+  childText: string,
+  state: CheckState,
+): { line: string; i18n: I18nLine } {
+  // 조사를 붙이기 전에 종결부호를 뗀다. 안 그러면 "읽었어.라고" 가 된다.
+  const bare = childText.trim().replace(/[.!?~…]+$/, "");
+  const quoted = bare.length > 18 ? `${bare.slice(0, 18)}…` : bare;
 
   if (state === "NO_INPUT" || state === "UNCLEAR") {
-    if (speaker === "junseo") return "…괜찮아. 천천히 말해도 돼.";
-    if (speaker === "teacher") return "괜찮아요. 한 번만 더 말해 볼까요?";
-    return "응? 한 번만 더 말해줄래?";
+    if (speaker === "junseo") return { line: "…괜찮아. 천천히 말해도 돼.", i18n: FIXED_I18N.junseoSlow };
+    if (speaker === "teacher") return { line: "괜찮아요. 한 번만 더 말해 볼까요?", i18n: FIXED_I18N.teacherAgain };
+    return { line: "응? 한 번만 더 말해줄래?", i18n: FIXED_I18N.haneulAgain };
   }
 
   if (speaker === "junseo") {
-    return state === "SUCCESS" ? "…잘 말했어. 네 이야기 재미있었어." : "…응. 그 이야기 궁금해.";
+    return state === "SUCCESS"
+      ? { line: "…잘 말했어. 네 이야기 재미있었어.", i18n: FIXED_I18N.junseoPraise }
+      : { line: "…응. 그 이야기 궁금해.", i18n: FIXED_I18N.junseoCurious };
   }
   if (speaker === "teacher") {
-    return state === "SUCCESS" ? "잘 말했어요. 끝까지 이야기했네요." : "좋아요. 천천히 말해도 돼요.";
+    return state === "SUCCESS"
+      ? { line: "잘 말했어요. 끝까지 이야기했네요.", i18n: FIXED_I18N.teacherPraise }
+      : { line: "좋아요. 천천히 말해도 돼요.", i18n: FIXED_I18N.teacherSlow };
   }
+
   // 하늘이 — 밝고 크게 반응한다. 받침에 맞춰 조사를 고른다.
-  const said = withParticle(quoted, ["이라고", "라고"]);
-  const pool = [
-    `오~ “${quoted}”! 나도 그 책 읽어보고 싶다 ✨`,
-    `“${quoted}”… 응, 무슨 말인지 알겠어 😊`,
-    `“${said}” 했구나! 고마워 😄`,
-    `아하, “${quoted}”! 좋은데? 👍`,
+  // 말줄임표로 잘린 인용에는 조사를 붙이지 않는다("…라고" 는 어색하다).
+  const said = quoted.endsWith("…") ? quoted : withParticle(quoted, ["이라고", "라고"]);
+  const pool: { line: string; i18n: I18nLine }[] = [
+    { line: `오~ “${quoted}”! 나도 그 책 읽어보고 싶다 ✨`, i18n: QUOTED_I18N.wantRead(quoted) },
+    { line: `“${quoted}”… 응, 무슨 말인지 알겠어 😊`, i18n: QUOTED_I18N.understand(quoted) },
+    { line: `“${said}” 했구나! 고마워 😄`, i18n: QUOTED_I18N.thanks(quoted) },
+    { line: `아하, “${quoted}”! 좋은데? 👍`, i18n: QUOTED_I18N.nice(quoted) },
   ];
   // 발화 길이로 고정 선택 — 같은 입력에 같은 반응이 나와야 폴백인 걸 들키지 않는다.
   return pool[childText.length % pool.length];
+}
+
+/**
+ * 폴백 대사의 가정언어 번역.
+ *
+ * 뜻이 대충 통하는 다른 문장을 붙이면 안 된다 — 아이는 한국어가 이해 안 될 때
+ * 이걸 누르는 거라, 다른 말이 나오면 없느니만 못하다.
+ * 그래서 대사 하나하나에 짝을 맞춰 두고, 아이가 한 말은 그대로 끼워 넣는다.
+ *
+ * LLM 경로는 lineI18n 을 같은 응답에 실어 받는다.
+ */
+type Foreign = Exclude<LangCode, "ko">;
+type I18nLine = Record<Foreign, string>;
+
+const fixed = (vi: string, zh: string, ru: string, tl: string): I18nLine => ({ vi, zh, ru, tl });
+const quoting = (fn: (q: string) => I18nLine) => fn;
+
+/** 아이가 한 말을 그대로 인용하는 대사들. */
+const QUOTED_I18N = {
+  wantRead: quoting((q) => ({
+    vi: `Ồ~ “${q}”! Mình cũng muốn đọc cuốn đó ✨`,
+    zh: `哇~“${q}”！我也想读那本书 ✨`,
+    ru: `О, «${q}»! Я тоже хочу почитать ✨`,
+    tl: `Uy~ “${q}”! Gusto ko ring basahin iyon ✨`,
+  })),
+  understand: quoting((q) => ({
+    vi: `“${q}”… Ừ, mình hiểu rồi 😊`,
+    zh: `“${q}”…嗯，我明白了 😊`,
+    ru: `«${q}»… Да, я понял 😊`,
+    tl: `“${q}”… Ah, naintindihan ko 😊`,
+  })),
+  thanks: quoting((q) => ({
+    vi: `Cậu nói “${q}” à! Cảm ơn cậu 😄`,
+    zh: `你说“${q}”呀！谢谢你 😄`,
+    ru: `Ты сказал «${q}»! Спасибо 😄`,
+    tl: `“${q}” pala! Salamat 😄`,
+  })),
+  nice: quoting((q) => ({
+    vi: `A ha, “${q}”! Hay đấy 👍`,
+    zh: `啊哈，“${q}”！不错嘛 👍`,
+    ru: `Ага, «${q}»! Здорово 👍`,
+    tl: `Ahh, “${q}”! Ang galing 👍`,
+  })),
+} as const;
+
+/** 인용이 없는 고정 대사들. */
+const FIXED_I18N = {
+  junseoSlow: fixed(
+    "…Không sao. Cậu nói từ từ cũng được.",
+    "…没关系。慢慢说也可以。",
+    "…Ничего. Можешь говорить медленно.",
+    "…Okay lang. Puwedeng dahan-dahan.",
+  ),
+  teacherAgain: fixed(
+    "Không sao đâu. Nói lại một lần nữa nhé?",
+    "没关系。再说一次好吗？",
+    "Ничего страшного. Скажешь ещё раз?",
+    "Okay lang. Ulitin natin?",
+  ),
+  haneulAgain: fixed(
+    "Ơ? Cậu nói lại một lần nữa nhé?",
+    "嗯？可以再说一次吗？",
+    "А? Скажешь ещё разок?",
+    "Ha? Pwede mong ulitin?",
+  ),
+  junseoPraise: fixed(
+    "…Cậu nói hay lắm. Câu chuyện của cậu thú vị.",
+    "…说得很好。你的故事很有趣。",
+    "…Хорошо рассказал. Мне было интересно.",
+    "…Ang galing mo. Nakakatuwa ang kwento mo.",
+  ),
+  junseoCurious: fixed(
+    "…Ừ. Mình tò mò về chuyện đó.",
+    "…嗯。我很好奇那个故事。",
+    "…Да. Мне интересна эта история.",
+    "…Oo. Gusto kong marinig iyon.",
+  ),
+  teacherPraise: fixed(
+    "Cậu nói hay lắm. Đã kể hết đến cuối rồi.",
+    "说得很好。你说到最后了。",
+    "Хорошо рассказал. Довёл до конца.",
+    "Ang galing. Natapos mo ang kwento.",
+  ),
+  teacherSlow: fixed(
+    "Tốt lắm. Nói từ từ cũng được.",
+    "很好。慢慢说也可以。",
+    "Хорошо. Можно говорить не спеша.",
+    "Mabuti. Puwedeng dahan-dahan.",
+  ),
+} as const;
+
+function pick(i18n: I18nLine, lang: LangCode): string | null {
+  return lang === "ko" ? null : (i18n[lang] ?? null);
 }
 
 function verdictOf(state: CheckState, confidence: number): Verdict {
@@ -119,6 +224,8 @@ export class RuleEngine implements DialogueEngine {
       ? (input.sessionVars!.speaker as SpeakerId)
       : "haneul";
 
+    const reaction = npcReaction(speaker, result.text, result.state);
+
     return {
       coach: {
         verdict,
@@ -128,7 +235,8 @@ export class RuleEngine implements DialogueEngine {
       },
       npc: {
         speaker,
-        line: npcReaction(speaker, result.text, result.state),
+        line: reaction.line,
+        lineI18n: pick(reaction.i18n, input.homeLanguage),
         emotion: speaker === "junseo" ? "shy" : verdict === "complete" ? "happy" : "curious",
       },
       narratorHint: null,

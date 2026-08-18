@@ -8,6 +8,12 @@ export default {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      /**
+       * 기본 opacity 스케일은 5단위라 bg-ink/78 같은 클래스가 아예 생성되지 않는다.
+       * (배경이 통째로 사라져 내레이터 배너 글자가 안 보였다.)
+       * JIT는 실제로 쓰인 클래스만 뽑으므로 1단위로 열어둬도 번들은 안 커진다.
+       */
+      opacity: Object.fromEntries(Array.from({ length: 101 }, (_, i) => [String(i), String(i / 100)])),
       colors: {
         cream: "#FFF8ED",
         ink: { DEFAULT: "#3A3226", soft: "#8A7A5F" },

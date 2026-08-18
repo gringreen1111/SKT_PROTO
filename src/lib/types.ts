@@ -23,6 +23,12 @@ export interface TurnResponse {
     speaker: SpeakerId;
     /** 1~2문장, 각 8어절 이내. */
     line: string;
+    /**
+     * 말풍선을 눌렀을 때 보여줄 아이의 가정언어 번역.
+     * 별도 번역 호출을 하지 않으려고 같은 응답에 실어 받는다(§7 런타임 번역 금지).
+     * 없으면 말풍선에 번역 버튼을 띄우지 않는다 — 빈 화면을 보여주지 않기 위함.
+     */
+    lineI18n: string | null;
     emotion: Emotion;
   };
   /** 예의범절 안내가 필요할 때만. 그 외 null. */

@@ -94,6 +94,10 @@ export function validateTurnResponse(raw: unknown, allowedMission: string | null
   const line = npc.line;
   if (!isString(line) || !line.trim()) return { ok: false, reason: "npc.line 비어 있음" };
 
+  // 번역은 있으면 쓰고 없으면 만다. 번역 하나 때문에 턴 전체를 폴백시키지 않는다.
+  const rawI18n = npc.lineI18n;
+  const lineI18n = isString(rawI18n) && rawI18n.trim() ? rawI18n.trim() : null;
+
   const emotion = npc.emotion;
   if (!isString(emotion) || !EMOTIONS.includes(emotion as Emotion)) {
     return { ok: false, reason: `npc.emotion 값 오류: ${String(emotion)}` };
@@ -138,6 +142,7 @@ export function validateTurnResponse(raw: unknown, allowedMission: string | null
       npc: {
         speaker: speaker as SpeakerId,
         line: line.trim(),
+        lineI18n,
         emotion: emotion as Emotion,
       },
       narratorHint: (narratorHint as string | null) ?? null,

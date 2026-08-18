@@ -16,6 +16,7 @@ export const TurnSchema = z.object({
   npc: z.object({
     speaker: z.enum(["haneul", "junseo", "teacher"]),
     line: z.string(),
+    lineI18n: z.string().nullable(),
     emotion: z.enum(["happy", "curious", "calm", "shy"]),
   }),
   narratorHint: z.string().nullable(),

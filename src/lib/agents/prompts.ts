@@ -20,6 +20,7 @@ function commonConstraints(childName: string, homeLanguage: LangCode): string {
 이름: ${childName || "친구"}
 배경: ${HOME_LANGUAGE_LABEL[homeLanguage]}권에서 온 지 얼마 안 된 초등학교 1학년.
 한국어 수준: 표준 한국어 교육과정 2~3급(초급).
+가정언어: ${HOME_LANGUAGE_LABEL[homeLanguage]}${homeLanguage === "ko" ? " (번역 불필요)" : ""}
 
 [언어 규칙 — 예외 없음]
 - 한 문장은 8어절 이내. 한 번에 최대 2문장.
@@ -111,6 +112,7 @@ const OUTPUT_CONTRACT = `[출력 형식]
   "npc": {
     "speaker": "haneul" | "junseo" | "teacher",
     "line": string,
+    "lineI18n": string | null,
     "emotion": "happy" | "curious" | "calm" | "shy"
   },
   "narratorHint": string | null,
@@ -119,7 +121,10 @@ const OUTPUT_CONTRACT = `[출력 형식]
 
 - verdict 가 "complete" 이면 recast 는 null 이고 speakIndex 도 null 이다.
 - suggestions 는 언제나 정확히 2개. 각 문장 8어절 이내.
-- npc.line 은 1~2문장, 각 8어절 이내.`;
+- npc.line 은 1~2문장, 각 8어절 이내. 한국어로 쓴다.
+- npc.lineI18n 은 npc.line 을 아이의 가정언어로 옮긴 것이다.
+  아이가 말풍선을 눌렀을 때만 보이는 이해 보조용이라 직역보다 뜻이 통하는 게 우선이다.
+  가정언어가 한국어면 null 을 넣는다.`;
 
 export interface BuildPromptArgs {
   childName: string;
