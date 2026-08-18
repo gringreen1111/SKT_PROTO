@@ -1,0 +1,111 @@
+{
+  "id": "korean-presentation",
+  "title": "1교시 국어 · 읽은 책 소개하기",
+  "characters": ["teacher", "haneul", "junseo"],
+  "missions": [
+    {
+      "id": "timetable",
+      "label": "시간표 마스터",
+      "desc": "시계와 시간표를 보고 스스로 준비했어요"
+    },
+    {
+      "id": "selfsolve",
+      "label": "스스로 해냈어요",
+      "desc": "힌트 없이 혼자 힘으로 해결했어요"
+    },
+    {
+      "id": "teamwork",
+      "label": "조별과제 참여",
+      "desc": "친구들과 이야기를 나눴어요"
+    },
+    {
+      "id": "firstword",
+      "label": "첫 문장 말하기",
+      "desc": "내 생각을 한국어 문장으로 말했어요"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "teacher-intro",
+      "goal": "선생님이 오늘 활동을 안내한다",
+      "narrator": "선생님이 앞에 서 계세요. 선생님께는 '~요'를 붙여서 말해요.",
+      "narratorI18n": {
+        "vi": "Cô giáo đang đứng phía trước. Với cô giáo, hãy nói thêm '~요' nhé.",
+        "zh": "老师站在前面。对老师说话要加上 '~요' 哦。",
+        "ru": "Учительница стоит впереди. С учителем говори с '~요'.",
+        "tl": "Nakatayo sa harap ang guro. Sa guro, idagdag ang '~요'.",
+        "ko": "선생님이 앞에 서 계세요. 선생님께는 '~요'를 붙여서 말해요."
+      },
+      "npcTurn": { "speaker": "teacher", "intent": "오늘은 읽은 책을 친구들에게 소개한다고 안내" },
+      "childTurn": false
+    },
+    {
+      "id": "haneul-share",
+      "goal": "하늘이가 먼저 발표하고, 아이가 반응한다",
+      "narrator": "하늘이가 먼저 이야기해요. 친구에게는 편하게 말해도 돼요.",
+      "narratorI18n": {
+        "vi": "Haneul nói trước. Với bạn bè, cậu có thể nói thoải mái.",
+        "zh": "하늘이先说。对朋友可以随意地说话。",
+        "ru": "Ханыль говорит первой. С друзьями можно говорить попроще.",
+        "tl": "Si Haneul muna ang magsasalita. Sa kaibigan, puwedeng magsalita nang simple.",
+        "ko": "하늘이가 먼저 이야기해요. 친구에게는 편하게 말해도 돼요."
+      },
+      "sessionVars": {
+        "haneulBook": ["구름빵", "무지개 물고기", "괴물들이 사는 나라"]
+      },
+      "npcTurn": { "speaker": "haneul", "intent": "{haneulBook}을 읽은 이야기를 신나게 소개" },
+      "childTurn": true,
+      "childGoal": "하늘이에게 반응해주기",
+      "clears": "teamwork"
+    },
+    {
+      "id": "junseo-share",
+      "goal": "준서가 발표하고, 아이가 반응한다",
+      "narrator": "준서는 천천히 말해요. 끝까지 들어주면 좋아요.",
+      "narratorI18n": {
+        "vi": "Junseo nói chậm. Hãy nghe cậu ấy nói hết nhé.",
+        "zh": "俊瑞说话很慢。听他说完会更好。",
+        "ru": "Чунсо говорит медленно. Хорошо дослушать до конца.",
+        "tl": "Mabagal magsalita si Junseo. Mabuting pakinggan siya hanggang dulo.",
+        "ko": "준서는 천천히 말해요. 끝까지 들어주면 좋아요."
+      },
+      "sessionVars": {
+        "junseoBook": ["강아지똥", "아낌없이 주는 나무", "달님 안녕"]
+      },
+      "npcTurn": { "speaker": "junseo", "intent": "{junseoBook}을 조용조용 소개. 문장 앞에 '…'로 뜸을 들인다" },
+      "childTurn": true,
+      "childGoal": "준서에게 반응해주기",
+      "clears": "teamwork"
+    },
+    {
+      "id": "child-turn",
+      "goal": "아이가 자기 책을 소개한다",
+      "narrator": "이제 내 차례예요. 친구들을 보고 말해요.",
+      "narratorI18n": {
+        "vi": "Đến lượt mình rồi. Hãy nhìn các bạn và nói nhé.",
+        "zh": "现在轮到我了。看着朋友们说吧。",
+        "ru": "Теперь моя очередь. Смотри на друзей и говори.",
+        "tl": "Ako na ang susunod. Tumingin sa mga kaibigan at magsalita.",
+        "ko": "이제 내 차례예요. 친구들을 보고 말해요."
+      },
+      "npcTurn": { "speaker": "haneul", "intent": "아이가 말한 내용을 한 번 되받아 주고 크게 기뻐한다" },
+      "childTurn": true,
+      "childGoal": "무슨 책을 읽었는지 말하기",
+      "clears": "firstword"
+    },
+    {
+      "id": "wrapup",
+      "goal": "선생님이 마무리한다",
+      "narrator": "발표가 끝났어요. 잘 해냈어요.",
+      "narratorI18n": {
+        "vi": "Buổi thuyết trình đã xong. Cậu làm tốt lắm.",
+        "zh": "发表结束了。你做得很棒。",
+        "ru": "Выступление окончено. Ты молодец.",
+        "tl": "Tapos na ang pagbabahagi. Ang galing mo.",
+        "ko": "발표가 끝났어요. 잘 해냈어요."
+      },
+      "npcTurn": { "speaker": "teacher", "intent": "말한 행동 자체를 인정하고 칭찬. 내용은 평가하지 않는다" },
+      "childTurn": false
+    }
+  ]
+}
